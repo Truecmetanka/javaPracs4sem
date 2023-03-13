@@ -1,0 +1,65 @@
+package lab_09
+
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//An executable jar file is just a jar file containing a Main-Class entry in its manifest
+jar { //Создать Gradle Task, который создает jar-файл приложения
+    manifest {
+        attributes(
+                'Main-Class' : 'org.example.Main'
+        )
+    }
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+}
+
+task copyJar(type: Copy) {
+    dependsOn 'jar'
+    from file("$buildDir/libs/task09-1.0-SNAPSHOT.jar")
+    into file("$rootDir/src/main/resources/")
+}
+
+task removeJar(type: Delete) {
+    delete file("$rootDir/src/main/resources/task09-1.0-SNAPSHOT.jar")
+}
+
+task buildImage(type: Exec) {
+    dependsOn 'copyJar'
+    finalizedBy 'removeJar'
+    commandLine 'docker', 'build', '-t', 'task09-1.0', './src/main/resources/'
+}
+
+task runDocker(type: Exec) {
+    dependsOn 'buildImage'
+    finalizedBy 'removeContainer'
+    commandLine 'docker', 'run', '--name', 'task09-1.0', 'task09-1.0'
+}
+
+task removeContainer(type:Exec) {
+    finalizedBy 'removeImage'
+    commandLine 'docker', 'container', 'rm', 'task09-1.0'
+}
+
+task removeImage(type: Exec) {
+    commandLine 'docker', 'image', 'rm', 'task09-1.0'
+}
